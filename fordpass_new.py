@@ -753,6 +753,28 @@ class Vehicle:
         except requests.exceptions.RequestException as err:
             print(f"Something went wrong: {err}")
             sys.exit()
+            
+    def charge_log(self):
+        """Get Charge logs from account"""
+        self.__acquire_token()
+
+        headers = {
+            **apiHeaders,
+            "Auth-Token": self.token,
+            "Application-Id": self.region
+        }
+
+        response = session.get(
+            f"{GUARD_URL}/electrification/experiences/v1/devices/{self.vin}/energy-transfer-logs/",
+            headers=headers)
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result
+
+        response.raise_for_status()
+        charge_log = response.json()
+        return charge_log
 
     def get_messages(self):
         """Make call to messages API"""
