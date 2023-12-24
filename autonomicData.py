@@ -6,6 +6,7 @@ import sys
 import os
 import re
 import requests
+from config import fordpass_vin, fordpass_region, veh_model, veh_year
 
 
 # Add the details below
@@ -15,22 +16,22 @@ import requests
 # USER INPUT DATA
 
 # Required: Enter the VIN to query
-FP_VIN = ""
+FP_VIN = fordpass_vin
 
 # Required: Your region. Uncomment your region if it is different, then comment out the other one (# is a comment).
 
 #REGION = "UK&Europe"
 #REGION = "Australia"
-REGION = "North America & Canada"
+REGION = fordpass_region
 
 # Automatically redact json? (True or False) False is only recommended if you would like to save your json for personal use
-REDACTION = True
+# REDACTION = True
 
 # Optional: Enter your vehicle year (example: 2023)
-VIC_YEAR = ""
+VIC_YEAR = veh_year
 
 # Optional: Enter your vehicle model (example: Lightning)
-VIC_MODEL = ""
+VIC_MODEL = veh_model
 
 # You can turn off print statements if you want to use this script for other purposes (True or False)
 VERBOSE = True

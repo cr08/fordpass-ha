@@ -1,8 +1,9 @@
 """Fordpass API Library"""
 import hashlib
 import json
-import logging
+# import logging
 import os
+import sys
 import random
 import re
 import string
@@ -13,7 +14,12 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-_LOGGER = logging.getLogger(__name__)
+from config import fordpass_username, fordpass_password, fordpass_region, fordpass_vin
+
+cwd = os.path.dirname(os.path.abspath(__file__))
+config_location = cwd
+
+# _LOGGER = logging.getLogger(__name__)
 defaultHeaders = {
     "Accept": "*/*",
     "Accept-Language": "en-us",
@@ -61,6 +67,9 @@ AUTONOMIC_URL = "https://api.autonomic.ai/v1"
 AUTONOMIC_ACCOUNT_URL = "https://accounts.autonomic.ai/v1"
 FORD_LOGIN_URL = "https://login.ford.com"
 
+#Moved more config options outside functions/classes
+save_token = True
+
 session = requests.Session()
 
 
@@ -68,16 +77,17 @@ class Vehicle:
     # Represents a Ford vehicle, with methods for status and issuing commands
 
     def __init__(
-        self, username, password, vin, region, save_token=False, config_location=""
+        self
     ):
-        self.username = username
-        self.password = password
+        self.username = fordpass_username
+        self.password = fordpass_password
         self.save_token = save_token
+        region = fordpass_region
         self.region = region_lookup[region]
         self.country_code = locale_lookup[region]
         self.short_code = locale_short_lookup[region]
         self.region2 = region
-        self.vin = vin
+        self.vin = fordpass_vin
         self.token = None
         self.expires = None
         self.expires_at = None
@@ -89,11 +99,7 @@ class Vehicle:
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
-        if config_location == "":
-            self.token_location = "custom_components/fordpass/fordpass_token.txt"
-        else:
-            _LOGGER.debug(config_location)
-            self.token_location = config_location
+        self.token_location = os.path.join(cwd, "fordpass_token.txt")
 
     def base64_url_encode(self, data):
         """Encode string to base64"""
@@ -107,7 +113,7 @@ class Vehicle:
     
     def auth2_step1(self):
         """Auth2 step 1 obtain tokens"""
-        _LOGGER.debug("Running Step1 new!")
+        # _LOGGER.debug("Running Step1 new!")
         headers = {
             **loginHeaders,
         }
@@ -132,19 +138,19 @@ class Vehicle:
         if match:
             settings = match.group(1)
             settings_json = json.loads(settings)
-            _LOGGER.debug(settings_json)
-            _LOGGER.debug(settings_json["transId"])
+            # _LOGGER.debug(settings_json)
+            # _LOGGER.debug(settings_json["transId"])
             transId = settings_json["transId"]
             csrfToken = settings_json["csrf"]
-        _LOGGER.debug(step1get.status_code)
-        _LOGGER.debug(step1_session.cookies.get_dict())
+        # _LOGGER.debug(step1get.status_code)
+        # _LOGGER.debug(step1_session.cookies.get_dict())
         data = {
             "request_type": "RESPONSE",
             "signInName": self.username,
             "password": self.password,
         }
         urlp = f"{FORD_LOGIN_URL}/4566605f-43a7-400a-946e-89cc9fdb0bd7/B2C_1A_SignInSignUp_{self.country_code}/SelfAsserted?tx={transId}&p=B2C_1A_SignInSignUp_en-AU"
-        _LOGGER.debug(urlp)
+        # _LOGGER.debug(urlp)
         headers = {
             **loginHeaders,
             "Origin": "https://login.ford.com",
@@ -157,11 +163,11 @@ class Vehicle:
             data=data
         )
         step1post.raise_for_status()
-        _LOGGER.debug("checking password")
-        _LOGGER.debug(step1post.text)
-        _LOGGER.debug(step1post.status_code)
-        cookie_dict = step1_session.cookies.get_dict()
-        _LOGGER.debug(cookie_dict)
+        # _LOGGER.debug("checking password")
+        # _LOGGER.debug(step1post.text)
+        # _LOGGER.debug(step1post.status_code)
+        # cookie_dict = step1_session.cookies.get_dict()
+        # _LOGGER.debug(cookie_dict)
 
 
 
@@ -174,11 +180,11 @@ class Vehicle:
         step1pt2.raise_for_status()
 
         test = step1pt2.headers["Location"]
-        _LOGGER.debug(test)
+        # _LOGGER.debug(test)
 
         code_new = test.replace("fordapp://userauthorized/?code=","")
 
-        _LOGGER.debug(code_new)
+        # _LOGGER.debug(code_new)
 
         data = {
             "client_id" : "09852200-05fd-41f6-8c21-d36d3497dc64",
@@ -196,26 +202,19 @@ class Vehicle:
         )
         step1pt3.raise_for_status()
 
-        _LOGGER.debug(step1pt3.status_code)
-        _LOGGER.debug(step1pt3.text)
+        # _LOGGER.debug(step1pt3.status_code)
+        # _LOGGER.debug(step1pt3.text)
 
         tokens = step1pt3.json()
         if tokens:
             if self.auth2_step2(tokens):
                 return tokens
-        else:
-            _LOGGER.debug("DAM IT WENT WRONG")
-
-        
-
-
-
-
-
-
-
+        # else:
+        #     # _LOGGER.debug("DAM IT WENT WRONG")
+        #     print("DEBUG: Something went wrong...")
+            
     def auth2_step2(self, result):
-        _LOGGER.debug(result)
+        # _LOGGER.debug(result)
 
         data = {"idpToken": result["access_token"]}
         headers = {**apiHeaders, "Application-Id": self.region}
@@ -225,16 +224,16 @@ class Vehicle:
             headers=headers,
         )
         response.raise_for_status()
-        _LOGGER.debug(response.status_code)
-        _LOGGER.debug(response.text)
+        # _LOGGER.debug(response.status_code)
+        # _LOGGER.debug(response.text)
         result = response.json()
         self.token = result["access_token"]
-        _LOGGER.debug(self.token)
+        # _LOGGER.debug(self.token)
         self.refresh_token = result["refresh_token"]
         self.expires_at = time.time() + result["expires_in"]
-        _LOGGER.debug(self.expires_at)
+        # _LOGGER.debug(self.expires_at)
         auto_token = self.get_auto_token()
-        _LOGGER.debug("AUTO 2")
+        # _LOGGER.debug("AUTO 2")
         self.auto_token = auto_token["access_token"]
         self.auto_expires_at = time.time() + result["expires_in"]
         if self.save_token:
@@ -245,13 +244,13 @@ class Vehicle:
 
             self.write_token(result)
         session.cookies.clear()
-        _LOGGER.debug("Step 5 Complete")
+        # _LOGGER.debug("Step 5 Complete")
         return True
 
 
     def auth_step1(self):
         """Obtain data-ibm-login-url"""
-        _LOGGER.debug("Running Step1")
+        # _LOGGER.debug("Running Step1")
         try:
             headers = {
                 **defaultHeaders,
@@ -265,23 +264,23 @@ class Vehicle:
                 url1,
                 headers=headers,
             )
-            _LOGGER.debug(response.text)
-            _LOGGER.debug(response.status_code)
+            # _LOGGER.debug(response.text)
+            # _LOGGER.debug(response.status_code)
             if response.status_code != 200:
-                _LOGGER.debug("Incorrect response from URL")
+                # _LOGGER.debug("Incorrect response from URL")
                 raise Exception("Response from URL was invalid")
 
             ibm_url = re.findall('data-ibm-login-url="(.*)"\s', response.text)[0]
-            _LOGGER.debug("Step 1 Complete")
+            # _LOGGER.debug("Step 1 Complete")
             return {"ibm_url": ibm_url, "code1": code1}
         except Exception as ex:
-            _LOGGER.debug("Step 1 Exception")
-            _LOGGER.debug(ex)
+            # _LOGGER.debug("Step 1 Exception")
+            # _LOGGER.debug(ex)
             return None
 
     def auth_step2(self, ibm_url):
         """Login using credentials"""
-        _LOGGER.debug("Running Step2")
+        # _LOGGER.debug("Running Step2")
         try:
             next_url = SSO_URL + ibm_url
             headers = {
@@ -304,19 +303,20 @@ class Vehicle:
 
             if response.status_code == 302:
                 next_url = response.headers["Location"]
-                _LOGGER.debug("Step 2 Complete")
+                # _LOGGER.debug("Step 2 Complete")
                 return next_url
             return None
         except Exception as ex:
-            _LOGGER.debug("Step 2 Exception")
-            _LOGGER.debug(ex)
+            # _LOGGER.debug("Step 2 Exception")
+            # _LOGGER.debug(ex)
             if response.text is not None:
-                _LOGGER.debug(response.text)
+                # _LOGGER.debug(response.text)
+                return None
             return None
 
     def auth_step3(self, next_url):
         """Obtain code and grant_id"""
-        _LOGGER.debug("Running Step3")
+        # _LOGGER.debug("Running Step3")
         try:
 
             headers = {
@@ -336,23 +336,24 @@ class Vehicle:
                 params = dict(x.split('=') for x in query.split('&'))
                 code = params["code"]
                 grant_id = params["grant_id"]
-                _LOGGER.debug("Step 3 Complete")
+                # _LOGGER.debug("Step 3 Complete")
                 return {"code": code, "grant_id": grant_id}
             response.raise_for_status()
             return None
 
         except Exception as ex:
-            _LOGGER.debug("Step 3 Exception")
-            _LOGGER.debug(ex)
+            # _LOGGER.debug("Step 3 Exception")
+            # _LOGGER.debug(ex)
             if response.status_code is not None:
-                _LOGGER.debug(response.status_code)
-            if response.headers is not None:
-                _LOGGER.debug(response.headers)
+                # _LOGGER.debug(response.status_code)
+                if response.headers is not None:
+                    # _LOGGER.debug(response.headers)
+                    return None
             return None
 
     def auth_step4(self, codes, code1):
         """Obtain access_token"""
-        _LOGGER.debug("Running Step4")
+        # _LOGGER.debug("Running Step4")
         try:
             grant_id = codes["grant_id"]
             code = codes["code"]
@@ -381,20 +382,21 @@ class Vehicle:
                 result = response.json()
                 if result["access_token"]:
                     access_token = result["access_token"]
-                    _LOGGER.debug("Step 4 Complete")
+                    # _LOGGER.debug("Step 4 Complete")
                     return access_token
             response.raise_for_status()
             return None
         except Exception as ex:
-            _LOGGER.debug("Step 4 exception")
-            _LOGGER.debug(ex)
+            # _LOGGER.debug("Step 4 exception")
+            # _LOGGER.debug(ex)
             if response.text is not None:
-                _LOGGER.debug(response.text)
+                # _LOGGER.debug(response.text)
+                return None
             return None
 
     def auth_step5(self, access_token):
         """Get tokens"""
-        _LOGGER.debug("Running Step5")
+        # _LOGGER.debug("Running Step5")
         try:
             data = {"ciToken": access_token}
             headers = {**apiHeaders, "Application-Id": self.region}
@@ -421,21 +423,22 @@ class Vehicle:
 
                     self.write_token(result)
                 session.cookies.clear()
-                _LOGGER.debug("Step 5 Complete")
+                # _LOGGER.debug("Step 5 Complete")
                 return True
             response.raise_for_status()
             return False
         except Exception as ex:
-            _LOGGER.debug("Step 5 exception")
-            _LOGGER.debug(ex)
+            # _LOGGER.debug("Step 5 exception")
+            # _LOGGER.debug(ex)
             if response.text is not None:
-                _LOGGER.debug(response.text)
+                # _LOGGER.debug(response.text)
+                return False
             return False
 
     def auth(self):
         """New Authentication System """
-        _LOGGER.debug("New System")
-        _LOGGER.debug(self.errors)
+        # _LOGGER.debug("New System")
+        # _LOGGER.debug(self.errors)
 
         # Run Step 1 auth
         access_tokens = self.auth2_step1()
@@ -495,7 +498,7 @@ class Vehicle:
 
     def refresh_token_func(self, token):
         """Refresh token if still valid"""
-        _LOGGER.debug("Refreshing token")
+        # _LOGGER.debug("Refreshing token")
         data = {"refresh_token": token["refresh_token"]}
         headers = {**apiHeaders, "Application-Id": self.region}
 
@@ -513,13 +516,13 @@ class Vehicle:
             self.refresh_token = result["refresh_token"]
             self.expires_at = time.time() + result["expires_in"]
         if response.status_code == 401:
-            _LOGGER.debug("401 response stage 2: refresh stage 1 token")
+            # _LOGGER.debug("401 response stage 2: refresh stage 1 token")
             self.auth()
 
     def __acquire_token(self):
         # Fetch and refresh token as needed
         # If file exists read in token file and check it's valid
-        _LOGGER.debug("Fetching token")
+        # _LOGGER.debug("Fetching token")
         if self.save_token:
             if os.path.isfile(self.token_location):
                 data = self.read_token()
@@ -530,7 +533,7 @@ class Vehicle:
                     self.auto_token = data["auto_token"]
                     self.auto_expires_at = data["auto_expiry"]
                 else:
-                    _LOGGER.debug("AUTO token not set in file")
+                    # _LOGGER.debug("AUTO token not set in file")
                     self.auto_token = None
                     self.auto_expires_at = None
             else:
@@ -547,33 +550,32 @@ class Vehicle:
             data["expiry_date"] = self.expires_at
             data["auto_token"] = self.auto_token
             data["auto_expiry"] = self.auto_expires_at
-        _LOGGER.debug(self.auto_token)
-        _LOGGER.debug(self.auto_expires_at)
+        # _LOGGER.debug(self.auto_token)
+        # _LOGGER.debug(self.auto_expires_at)
         if self.auto_token is None or self.auto_expires_at is None:
             self.auth()
         # self.auto_token = data["auto_token"]
         # self.auto_expires_at = data["auto_expiry"]
         if self.expires_at:
             if time.time() >= self.expires_at:
-                _LOGGER.debug("No token, or has expired, requesting new token")
+                # _LOGGER.debug("No token, or has expired, requesting new token")
                 self.refresh_token_func(data)
                 # self.auth()
         if self.auto_expires_at:
             if time.time() >= self.auto_expires_at:
-                _LOGGER.debug("Autonomic token expired")
+                # _LOGGER.debug("Autonomic token expired")
                 self.auth()
         if self.token is None:
-            _LOGGER.debug("Fetching token4")
+            # _LOGGER.debug("Fetching token4")
             # No existing token exists so refreshing library
             self.auth()
-        else:
-            _LOGGER.debug("Token is valid, continuing")
+            
 
     def write_token(self, token):
         """Save token to file for reuse"""
         with open(self.token_location, "w", encoding="utf-8") as outfile:
             token["expiry_date"] = time.time() + token["expires_in"]
-            _LOGGER.debug(token)
+            # _LOGGER.debug(token)
             json.dump(token, outfile)
 
     def read_token(self):
@@ -583,7 +585,7 @@ class Vehicle:
                 token = json.load(token_file)
                 return token
         except ValueError:
-            _LOGGER.debug("Fixing malformed token")
+            # _LOGGER.debug("Fixing malformed token")
             self.auth()
             with open(self.token_location, encoding="utf-8") as token_file:
                 token = json.load(token_file)
@@ -600,7 +602,7 @@ class Vehicle:
 
     def get_auto_token(self):
         """Get token from new autonomic API"""
-        _LOGGER.debug("Getting Auto Token")
+        # _LOGGER.debug("Getting Auto Token")
         headers = {
             "accept": "*/*",
             "content-type": "application/x-www-form-urlencoded"
@@ -615,19 +617,19 @@ class Vehicle:
 
         }
 
-        _LOGGER.debug(data)
+        # _LOGGER.debug(data)
 
         r = session.post(
             f"{AUTONOMIC_ACCOUNT_URL}/auth/oidc/token",
             data=data,
             headers=headers
         )
-        _LOGGER.debug(r.text)
+        # _LOGGER.debug(r.text)
 
         if r.status_code == 200:
             result = r.json()
-            _LOGGER.debug(r.status_code)
-            _LOGGER.debug(r.text)
+            # _LOGGER.debug(r.status_code)
+            # _LOGGER.debug(r.text)
             self.auto_token = result["access_token"]
             return result
         return False
@@ -641,11 +643,11 @@ class Vehicle:
             "auth-token": self.token,
             "Application-Id": self.region,
         }
-        _LOGGER.debug("Status function before auto_token")
-        _LOGGER.debug(self.auto_token)
-        _LOGGER.debug(self.vin)
+        # _LOGGER.debug("Status function before auto_token")
+        # _LOGGER.debug(self.auto_token)
+        # _LOGGER.debug(self.vin)
 
-        _LOGGER.debug("Trying new vehicle API endpoint")
+        # _LOGGER.debug("Trying new vehicle API endpoint")
         headers = {
             **apiHeaders,
             "authorization": f"Bearer {self.auto_token}",
@@ -654,22 +656,23 @@ class Vehicle:
         r = session.get(
             f"{AUTONOMIC_URL}/telemetry/sources/fordpass/vehicles/{self.vin}", params=params, headers=headers
         )
-        _LOGGER.debug(r.status_code)
+        # _LOGGER.debug(r.status_code)
         return r
 
     def status(self):
         """Get Vehicle status from API"""
-        _LOGGER.debug("Getting Vehicle Status")
+        # _LOGGER.debug("Getting Vehicle Status")
         self.__acquire_token()
 
         if NEW_API:
             r = self.get_status()
-            _LOGGER.debug("NEW API???")
+            # _LOGGER.debug("NEW API???")
 
             if r.status_code == 200:
                 #_LOGGER.debug(r.text)
                 result = r.json()
-
+                print("Got vehicle status")
+                
                 return result
             if r.status_code == 401:
                 self.auth()
@@ -680,7 +683,7 @@ class Vehicle:
             if r.status_code == 403:
                 i = 0
                 while i < 3:
-                    _LOGGER.debug(f"Retrying Vehicle endpoint attempt {i}")
+                    # _LOGGER.debug(f"Retrying Vehicle endpoint attempt {i}")
                     response = self.get_status()
                     if response.status_code == 200:
                         result = response.json()
@@ -688,6 +691,68 @@ class Vehicle:
                     i += 1
             response.raise_for_status()
         return {}
+    
+    def vehicle_cap(self):
+        """Make call to vehicles API"""
+        self.__acquire_token()
+        region = fordpass_region
+        regionID = self.region
+        
+        if region == "Australia":
+            countryheader = "AUS"
+        elif region == "North America & Canada":
+            countryheader = "USA"
+        elif region == "UK&Europe":
+            countryheader = "GBR"
+        else:
+            countryheader = "USA"
+        print("DEBUG: countryheader: " + countryheader)
+
+        headers = {
+            "Accept": "*/*",
+            "Accept-Language": "en-us",
+            "User-Agent": "FordPass/23 CFNetwork/1408.0.4 Darwin/22.5.0",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Content-Type": "application/json",
+            "Auth-Token": self.token,
+            "Application-Id": regionID,
+            "Countrycode": countryheader,
+            "Locale": "EN-US"
+        }
+
+        data = {
+            "dashboardRefreshRequest": "All"
+        }
+
+        # redaction_items = ["VIN", "vin", "vehicleImage"]
+
+        try:
+            response = requests.post(
+                f"https://api.mps.ford.com/api/expdashboard/v1/details/",
+                headers=headers,
+                data=json.dumps(data)
+            )
+            response.raise_for_status()
+            print("Got vehicle capabilities")
+            vehicleCap = response.json()
+            # if REDACTION:
+            #     redact_json(vehicleCap, redaction_items)
+            return vehicleCap
+
+        except requests.exceptions.HTTPError as errh:
+            print(f"HTTP Error: {errh}")
+            # print("Trying refresh token")
+            # get_autonomic_token(fp_refresh)
+            return None
+        except requests.exceptions.ConnectionError as errc:
+            print(f"Error Connecting: {errc}")
+            sys.exit()
+        except requests.exceptions.Timeout as errt:
+            print(f"Timeout Error: {errt}")
+            sys.exit()
+        except requests.exceptions.RequestException as err:
+            print(f"Something went wrong: {err}")
+            sys.exit()
 
     def get_messages(self):
         """Make call to messages API"""
@@ -701,7 +766,7 @@ class Vehicle:
 
     def messages(self):
         """Get Vehicle messages from API"""
-        _LOGGER.debug("Getting Messages")
+        # _LOGGER.debug("Getting Messages")
         self.__acquire_token()
         response = self.get_messages()
         if response.status_code == 200:
@@ -719,7 +784,7 @@ class Vehicle:
 
     def get_vehicles(self):
         """Make call to vehicles API"""
-        _LOGGER.debug("Getting Vehicles")
+        # _LOGGER.debug("Getting Vehicles")
         if self.region2 == "Australia":
             countryheader = "AUS"
         elif self.region2 == "North America & Canada":
@@ -824,7 +889,7 @@ class Vehicle:
         response = self.__make_request(
             "PUT", f"{GUARD_URL}/guardmode/v1/{self.vin}/session", None, None
         )
-        _LOGGER.debug(response.text)
+        # _LOGGER.debug(response.text)
         return response
 
     def disable_guard(self):
@@ -835,7 +900,7 @@ class Vehicle:
         response = self.__make_request(
             "DELETE", f"{GUARD_URL}/guardmode/v1/{self.vin}/session", None, None
         )
-        _LOGGER.debug(response.text)
+        # _LOGGER.debug(response.text)
         return response
 
     def request_update(self, vin=""):
@@ -891,9 +956,9 @@ class Vehicle:
                 headers=headers
             )
 
-        _LOGGER.debug("Testing command")
-        _LOGGER.debug(r.status_code)
-        _LOGGER.debug(r.text)
+        # _LOGGER.debug("Testing command")
+        # _LOGGER.debug(r.status_code)
+        # _LOGGER.debug(r.text)
         if r.status_code == 201:
             # New code to hanble checking states table from vehicle data
             response = r.json()
@@ -903,32 +968,32 @@ class Vehicle:
             while i < 14:
                 # Check status every 10 seconds for 90 seconds until command completes or time expires
                 status = self.status()
-                _LOGGER.debug("STATUS")
-                _LOGGER.debug(status)
+                # _LOGGER.debug("STATUS")
+                # _LOGGER.debug(status)
 
                 if "states" in status:
-                    _LOGGER.debug("States located")
+                    # _LOGGER.debug("States located")
                     if f"{command}Command" in status["states"]:
-                        _LOGGER.debug("Found command")
-                        _LOGGER.debug(status["states"][f"{command}Command"]["commandId"])
+                        # _LOGGER.debug("Found command")
+                        # _LOGGER.debug(status["states"][f"{command}Command"]["commandId"])
                         if status["states"][f"{command}Command"]["commandId"] == command_id:
-                            _LOGGER.debug("Making progress")
-                            _LOGGER.debug(status["states"][f"{command}Command"])
+                            # _LOGGER.debug("Making progress")
+                            # _LOGGER.debug(status["states"][f"{command}Command"])
                             if status["states"][f"{command}Command"]["value"]["toState"] == "success":
-                                _LOGGER.debug("Command succeeded")
+                                # _LOGGER.debug("Command succeeded")
                                 return True
                             if status["states"][f"{command}Command"]["value"]["toState"] == "expired":
-                                _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
+                                # _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
                                 if "statusRefresh" in command:
                                     raise exceptions.HomeAssistantError(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
                                 return False
                             if status["states"][f"{command}Command"]["value"]["toState"] == "failed":
-                                _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
+                                # _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
                                 if "statusRefresh" in command:
                                     raise exceptions.HomeAssistantError(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
                                 return False
                 i += 1
-                _LOGGER.debug("Looping again")
+                # _LOGGER.debug("Looping again")
                 time.sleep(10)
             # time.sleep(90)
             return False
