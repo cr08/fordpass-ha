@@ -47,14 +47,14 @@ try:
 except (FileNotFoundError, PermissionError, OSError):
     print("Error opening vehicleData JSON file")
 
-if not charge_logs:
+if not 'energyTransferLogs' in charge_logs or len(charge_logs['energyTransferLogs']) == 0:
     print("No charge logs. Skipping...")
 else:
-try:
-    with open(clog_fileName, 'w', encoding="utf-8") as file:
-        try:
-            json.dump(charge_logs, file, indent=4)
-        except (IOError, OSError):
-            print("Error writing to charge_log JSON file")
-except (FileNotFoundError, PermissionError, OSError):
-    print("Error opening charge_log JSON file")
+    try:
+        with open(clog_fileName, 'w', encoding="utf-8") as file:
+            try:
+                json.dump(charge_logs, file, indent=4)
+            except (IOError, OSError):
+                print("Error writing to charge_log JSON file")
+    except (FileNotFoundError, PermissionError, OSError):
+        print("Error opening charge_log JSON file")
