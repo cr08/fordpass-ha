@@ -706,7 +706,7 @@ class Vehicle:
             countryheader = "GBR"
         else:
             countryheader = "USA"
-        print("DEBUG: countryheader: " + countryheader)
+        # print("DEBUG: countryheader: " + countryheader)
 
         headers = {
             "Accept": "*/*",
