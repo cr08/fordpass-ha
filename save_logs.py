@@ -19,6 +19,7 @@ VIC_MODEL = veh_model
 veh = Vehicle()
 vehicle_status = veh.status()
 vehicle_capability = veh.vehicle_cap()
+charge_logs = veh.charge_log()
 
 current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
 if VIC_YEAR != "":
@@ -28,17 +29,14 @@ if VIC_MODEL != "":
 else:
     VIC_MODEL = "my"
 
-status_fileName = os.path.join(logs, f"chargelog_{VIC_YEAR}{VIC_MODEL}_{current_datetime}.json")
+clog_fileName = os.path.join(logs, f"chargelog_{VIC_YEAR}{VIC_MODEL}_{current_datetime}.json")
 status_fileName = os.path.join(logs, f"status_{VIC_YEAR}{VIC_MODEL}_{current_datetime}.json")
 
 if vehicle_capability != None:
         vehicleData = [vehicle_status, vehicle_capability]
 else:
-    # if VERBOSE:
-    #     print("Unable to get vehicle capability, saving vehicle status")
+    print("Unable to get vehicle capability, saving vehicle status")
     vehicleData = vehicle_status
-
-# Write the redacted JSON data to the file
 
 try:
     with open(status_fileName, 'w', encoding="utf-8") as file:
@@ -48,3 +46,15 @@ try:
             print("Error writing to vehicleData JSON file")
 except (FileNotFoundError, PermissionError, OSError):
     print("Error opening vehicleData JSON file")
+
+if not charge_logs:
+    print("No charge logs. Skipping...")
+else:
+try:
+    with open(clog_fileName, 'w', encoding="utf-8") as file:
+        try:
+            json.dump(charge_logs, file, indent=4)
+        except (IOError, OSError):
+            print("Error writing to charge_log JSON file")
+except (FileNotFoundError, PermissionError, OSError):
+    print("Error opening charge_log JSON file")

@@ -770,6 +770,7 @@ class Vehicle:
         
         if response.status_code == 200:
             result = response.json()
+            print("Got charge logs")
             return result
 
         response.raise_for_status()
