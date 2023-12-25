@@ -14,6 +14,9 @@ fordpass_vin = 'your_vin'
 veh_model = "vehicle_model"
 veh_year = "vehicle_year"
 
+# Location to store logs. Leave blank to default to ./logs/
+log_location = ""
+
 # InfluxDB info
 # influx_token = "your_API_token"
 # influx_org = "org"
