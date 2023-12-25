@@ -9,7 +9,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 if log_location:
     logs = log_location
 else:
-logs = os.path.join(cwd,"logs")
+    logs = os.path.join(cwd,"logs")
 
 # Check if designated log directory exists and create it if necessary.
 try:
