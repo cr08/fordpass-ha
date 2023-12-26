@@ -986,6 +986,8 @@ class Vehicle:
             # New code to hanble checking states table from vehicle data
             response = r.json()
             command_id = response["id"]
+            with open("com_resp.json", 'w', encoding="utf-8") as file:
+                json.dump(response, file, indent=4)
             # current_status = response["currentStatus"]
             i = 1
             while i < 14:
@@ -1004,16 +1006,16 @@ class Vehicle:
                             # _LOGGER.debug(status["states"][f"{command}Command"])
                             if status["states"][f"{command}Command"]["value"]["toState"] == "success":
                                 # _LOGGER.debug("Command succeeded")
-                                return True
+                                return status
                             if status["states"][f"{command}Command"]["value"]["toState"] == "expired":
                                 # _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
                                 if "statusRefresh" in command:
-                                    raise exceptions.HomeAssistantError(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
+                                    print(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
                                 return False
                             if status["states"][f"{command}Command"]["value"]["toState"] == "failed":
                                 # _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
                                 if "statusRefresh" in command:
-                                    raise exceptions.HomeAssistantError(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
+                                    print(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
                                 return False
                 i += 1
                 # _LOGGER.debug("Looping again")
