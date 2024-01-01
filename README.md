@@ -8,7 +8,7 @@ At this time, the script is functional with the following sets of data pulled fr
 * vehicle_capability
 * charge_logs
 
-### :warning: This is a WIP development repo. Use at your own risk. It may break at any time! :warning:
+### ⚠️ This is a WIP development repo. Use at your own risk. It may break at any time! ⚠️
 
 ###### Instructions:
 
@@ -17,6 +17,14 @@ At this time, the script is functional with the following sets of data pulled fr
    1. eg: `python3 save_logs.py`
 3. In the current state, it will pull and write a JSON file including the vehicle status/metrics and capabilities to the `./logs/` subfolder. Optionally charge logs will be written to a separate JSON if available (The Ford C-Max Energi does not have these sadly. This may also apply to the Fusion Energi)
 
-❗**The current recommended minimum polling interval is <ins>15 minutes</ins>. Any shorter is liable to have your account locked out.** ❗
+❗**The current recommended minimum polling interval is `<ins>`15 minutes`</ins>`. Any shorter is liable to have your account locked out.** ❗
 
 Documentation on some of the data points provided from the API is available under [autonomicData.md](autonomicData.md)
+
+## Credits
+
+[itchannel](https://github.com/itchannel) | [FordPass-HA - FordPass Home Assistant Integration
+](https://github.com/itchannel/fordpass-ha)[SquidBytes](https://github.com/SquidBytes) | [LightningROD
+](https://github.com/SquidBytes/LightningROD)
+
+Both users and repos have provided a significant basis for this project
