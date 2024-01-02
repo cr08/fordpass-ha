@@ -1011,12 +1011,12 @@ class Vehicle:
                                 # _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
                                 if "statusRefresh" in command:
                                     print(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Expired Status')}")
-                                return False
+                                return "Expired"
                             if status["states"][f"{command}Command"]["value"]["toState"] == "failed":
                                 # _LOGGER.warning(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
                                 if "statusRefresh" in command:
                                     print(f"Fordpass Command: {status.get('states', {}).get(f'{command}Command', {}).get('message', 'Failed Status')}")
-                                return False
+                                return "Failed"
                 i += 1
                 # _LOGGER.debug("Looping again")
                 time.sleep(10)
