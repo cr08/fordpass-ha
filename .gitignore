@@ -1,4 +1,5 @@
 fordpass_token.txt
 *.pyc
 *.json
+!refresh_status.json
 config.py
