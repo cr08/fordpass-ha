@@ -20,6 +20,13 @@ log_location = ""
 # Auto refresh function. Will intelligently send a refresh regularly to the vehicle during ignition on or EVSE connected status.
 auto_refresh = "False" # Set to True to enable
 
+# PostgreSQL info
+pgsql_host = "your_db_hostname[:port]"
+pgsql_db = "your_db_name"
+pgsql_user = "your_db_username"
+pgsql_password = "your_db_password"
+
+
 # InfluxDB info
 # influx_token = "your_API_token"
 # influx_org = "org"
